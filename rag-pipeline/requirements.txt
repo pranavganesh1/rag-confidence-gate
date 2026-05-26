@@ -4,3 +4,4 @@ pymupdf
 streamlit
 pytest
 numpy
+requests
