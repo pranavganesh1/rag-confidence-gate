@@ -86,3 +86,42 @@ if ask_button and query.strip():
     with st.spinner("Retrieving and evaluating..."):
         response = pipeline.query(query, top_k=top_k)
         st.session_state.history.insert(0, {"query": query, "response": response})
+
+
+def render_response(response):
+    status = response.get("status")
+    confidence = response.get("confidence_score", 0)
+
+    if status == "pass":
+        st.success(f"🟢 High Confidence — {confidence:.0%}")
+    elif status == "warn":
+        st.warning(f"🟡 Medium Confidence — {confidence:.0%} — verify against sources")
+    elif status == "refuse":
+        st.error(f"🔴 Low Confidence — {confidence:.0%} — refused to answer")
+
+    if status in ("pass", "warn") and response.get("answer"):
+        st.markdown("### Answer")
+        st.markdown(response["answer"])
+    elif status == "refuse":
+        st.markdown("### Why was this refused?")
+        st.markdown(response.get("refusal_reason", "Confidence too low."))
+
+        suggestions = response.get("suggestions", [])
+        if suggestions:
+            st.markdown("**Suggestions:**")
+            for suggestion in suggestions:
+                st.markdown(f"- {suggestion}")
+
+    if response.get("sources"):
+        st.markdown("### Sources")
+        for i, source in enumerate(response["sources"]):
+            similarity = source.get("similarity", 0)
+            with st.expander(f"Chunk {i + 1} — similarity: {similarity:.3f}"):
+                st.markdown(source.get("text_preview", ""))
+
+
+for item in st.session_state.history:
+    with st.container():
+        st.markdown(f"**Q: {item['query']}**")
+        render_response(item["response"])
+        st.divider()
