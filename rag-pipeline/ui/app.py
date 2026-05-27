@@ -3,7 +3,9 @@ import sys
 
 import streamlit as st
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ROOT)
+os.chdir(PROJECT_ROOT)
 
 from src.pipeline import RAGPipeline
 
@@ -40,11 +42,12 @@ with st.sidebar:
         progress = st.progress(0)
 
         for i, uploaded_file in enumerate(uploaded_files):
-            save_path = os.path.join("data", "documents", uploaded_file.name)
+            filename = os.path.basename(uploaded_file.name)
+            save_path = os.path.join("data", "documents", filename)
             with open(save_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            with st.spinner(f"Indexing {uploaded_file.name}..."):
+            with st.spinner(f"Indexing {filename}..."):
                 pipeline.ingest(save_path)
 
             progress.progress((i + 1) / len(uploaded_files))
