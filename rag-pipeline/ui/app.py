@@ -57,3 +57,32 @@ with st.sidebar:
     st.markdown("🟢 **High** — answer generated with citations")
     st.markdown("🟡 **Medium** — answer generated with warning")
     st.markdown("🔴 **Low** — refused, won't hallucinate")
+
+
+st.title("🔍 RAG with Confidence Gating")
+st.markdown(
+    "Ask questions about your uploaded documents. The system refuses to answer "
+    "rather than hallucinate."
+)
+
+if not st.session_state.indexed:
+    st.info("Upload and index documents using the sidebar to get started.")
+    st.stop()
+
+
+query = st.text_input(
+    "Ask a question",
+    placeholder="What does the document say about...?",
+    key="query_input",
+)
+
+col1, col2 = st.columns([1, 5])
+with col1:
+    ask_button = st.button("Ask", type="primary", use_container_width=True)
+with col2:
+    top_k = st.slider("Chunks to retrieve", min_value=3, max_value=10, value=5)
+
+if ask_button and query.strip():
+    with st.spinner("Retrieving and evaluating..."):
+        response = pipeline.query(query, top_k=top_k)
+        st.session_state.history.insert(0, {"query": query, "response": response})
