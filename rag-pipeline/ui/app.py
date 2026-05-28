@@ -69,3 +69,30 @@ st.caption("Answers grounded in your documents; refuses when confidence is too l
 
 if not st.session_state.ingested:
     st.info("Upload and ingest a PDF from the sidebar to get started.")
+    st.stop()
+
+
+query = st.text_input(
+    "Ask a question about your document",
+    placeholder="What is the main topic of this document?",
+    key="query_input",
+)
+
+col1, col2 = st.columns([1, 5])
+with col1:
+    ask = st.button("Ask", type="primary", use_container_width=True)
+with col2:
+    if st.button("Clear history", use_container_width=False):
+        st.session_state.history = []
+        st.rerun()
+
+
+if ask and query.strip():
+    with st.spinner("Retrieving and evaluating..."):
+        response = pipeline.query(query)
+        st.session_state.history.append({"query": query, "response": response})
+
+
+for item in reversed(st.session_state.history):
+    st.divider()
+    st.markdown(f"**Q: {item['query']}**")
