@@ -93,6 +93,62 @@ if ask and query.strip():
         st.session_state.history.append({"query": query, "response": response})
 
 
+def render_confidence(status, confidence):
+    if status == "pass":
+        st.success(f"PASS - Confidence: {confidence:.2f}")
+    elif status == "warn":
+        st.warning(
+            f"LOW CONFIDENCE - Score: {confidence:.2f} - Verify against sources"
+        )
+    else:
+        st.error(f"REFUSED - Confidence: {confidence:.2f}")
+
+
+def render_answer(response):
+    status = response.get("status")
+
+    if status in ("pass", "warn") and response.get("answer"):
+        st.markdown("**Answer:**")
+        st.markdown(response["answer"])
+        return
+
+    if status == "refuse":
+        reason = response.get("refusal_reason", "Confidence too low to answer reliably.")
+        st.markdown(f"**Reason:** {reason}")
+
+        suggestions = response.get("suggestions") or []
+        if suggestions:
+            st.markdown("**Suggestions:**")
+            for suggestion in suggestions:
+                st.markdown(f"- {suggestion}")
+
+
+def render_sources(response):
+    sources = response.get("sources") or []
+    if not sources:
+        return
+
+    with st.expander(f"View {len(sources)} source chunks"):
+        for index, source in enumerate(sources):
+            similarity = float(source.get("similarity", 0))
+            color = "green" if similarity > 0.75 else "orange" if similarity > 0.45 else "red"
+            chunk_id = source.get("chunk_id", index)
+
+            st.markdown(
+                f"**Chunk {int(chunk_id) + 1}** - "
+                f"similarity: :{color}[{similarity:.3f}]"
+            )
+            st.caption(source.get("text_preview", ""))
+            st.markdown("---")
+
+
 for item in reversed(st.session_state.history):
+    response = item["response"]
+    status = response.get("status")
+    confidence = float(response.get("confidence_score", 0))
+
     st.divider()
     st.markdown(f"**Q: {item['query']}**")
+    render_confidence(status, confidence)
+    render_answer(response)
+    render_sources(response)
