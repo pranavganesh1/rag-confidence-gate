@@ -30,6 +30,40 @@ if "history" not in st.session_state:
 pipeline = st.session_state.pipeline
 
 
+with st.sidebar:
+    st.title("Document Upload")
+    st.caption("Upload a PDF to query against.")
+
+    uploaded_file = st.file_uploader("Choose a PDF", type=["pdf"])
+
+    if uploaded_file is not None:
+        os.makedirs("data/documents", exist_ok=True)
+        filename = os.path.basename(uploaded_file.name)
+        save_path = os.path.join("data", "documents", filename)
+
+        with open(save_path, "wb") as file:
+            file.write(uploaded_file.getbuffer())
+
+        if st.button("Ingest Document", type="primary"):
+            with st.spinner("Chunking and embedding document..."):
+                pipeline.ingest(save_path)
+                st.session_state.ingested = True
+            st.success(f"Ingested: {filename}")
+
+    st.divider()
+
+    if st.session_state.ingested:
+        st.success("PASS: Document ready")
+    else:
+        st.warning("No document ingested yet")
+
+    st.divider()
+    st.caption("Confidence thresholds")
+    st.markdown("**PASS**: score >= 0.75")
+    st.markdown("**WARN**: score 0.45-0.74")
+    st.markdown("**REFUSE**: score < 0.45")
+
+
 st.title("RAG Confidence Gate")
 st.caption("Answers grounded in your documents; refuses when confidence is too low.")
 
