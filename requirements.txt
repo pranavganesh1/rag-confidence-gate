@@ -1,7 +1,7 @@
+streamlit
 sentence-transformers
 faiss-cpu
 pymupdf
-streamlit
 numpy
 requests
 anthropic
