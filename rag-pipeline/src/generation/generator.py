@@ -1,3 +1,5 @@
+import os
+
 import requests
 
 
@@ -27,7 +29,7 @@ class OllamaGenerator:
 class ClaudeGenerator:
     """
     Optional upgrade for production quality.
-    Set ANTHROPIC_API_KEY in your environment to use this.
+    Set ANTHROPIC_API_KEY in your environment or Streamlit secrets.
     """
 
     def __init__(self, model="claude-sonnet-4-20250514"):
@@ -37,7 +39,16 @@ class ClaudeGenerator:
         except ImportError as exc:
             raise ImportError("Run: pip install anthropic") from exc
 
-        self.client = anthropic.Anthropic()
+        api_key = os.getenv("ANTHROPIC_API_KEY") or self._streamlit_secret(
+            "ANTHROPIC_API_KEY"
+        )
+        if not api_key:
+            raise RuntimeError(
+                "ANTHROPIC_API_KEY is required for the Claude backend. "
+                "Set it as an environment variable or Streamlit secret."
+            )
+
+        self.client = anthropic.Anthropic(api_key=api_key)
 
     def generate(self, prompt):
         message = self.client.messages.create(
@@ -47,10 +58,24 @@ class ClaudeGenerator:
         )
         return message.content[0].text.strip()
 
+    @staticmethod
+    def _streamlit_secret(name):
+        try:
+            import streamlit as st
+
+            return st.secrets.get(name)
+        except Exception:
+            return None
+
 
 def get_generator(backend="ollama"):
     if backend == "ollama":
-        return OllamaGenerator()
+        try:
+            requests.get("http://localhost:11434", timeout=2).raise_for_status()
+            return OllamaGenerator()
+        except Exception:
+            print("Ollama not available - switching to Claude API")
+            return ClaudeGenerator()
     if backend == "claude":
         return ClaudeGenerator()
 
