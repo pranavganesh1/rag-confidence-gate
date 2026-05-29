@@ -6,4 +6,5 @@ __pycache__/
 .streamlit/
 !.streamlit/
 !.streamlit/config.toml
+!.streamlit/secrets.example.toml
 *.egg-info/
